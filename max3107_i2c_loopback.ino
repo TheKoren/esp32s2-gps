@@ -43,9 +43,64 @@
 #define MAX3107_REVID        (0x1f)
 
 /***********************************************************
+** Startup with SW and HW reset
+**
+** Arguments: -
+**
+** return value:  -
+**********************************************************/
+
+void MAX3107_RST_Process()
+{
+  Serial.println("Reset process running");
+  /*
+    Wait for the MAX 3107 to come out of reset
+    Wait for IRQ PIN to come up, as this
+    indicates that the MAX3107 reset is complete
+  */
+
+  while (IRQ_PIN == 0);
+
+  /* Perform a hardware reset */
+
+  digitalWrite(RST, LOW);
+  delay(1);
+  digitalWrite(RST, HIGH);
+  while (IRQ_PIN == 0);
+
+  /* Perform a software reset */
+
+  MAX3107_I2C_Write(MAX3107_CLKSOURCE, 0b00011000);
+  MAX3107_I2C_Write(MAX3107_MODE2, 0x01);
+  MAX3107_I2C_Write(MAX3107_MODE2, 0x00);
+  while (IRQ_PIN == 0);
+
+}
+
+/***********************************************************
+** Configuring Modes and Clocking
+**
+** Arguments:
+** loopback: TRUE, if loopback should be enabled
+**
+** return value:  -
+**********************************************************/
+
+void MAX3107_I2C_Init(bool loopback)
+{
+  Serial.println("Initialization process running");
+  /* Configure clocking */
+
+  MAX3107_I2C_Write(MAX3107_CLKSOURCE, 0b00011000);
+
+  MAX3107_I2C_Write(MAX3107_MODE2, 0b10000000); // Loop back
+
+}
+
+/***********************************************************
 ** Write one byte to the specified register in the MAX3107
 **
-** Arguments: 
+** Arguments:
 ** port: MAX3107 register address to write to
 ** val: the value to write to that register
 **
@@ -57,71 +112,57 @@
 bool MAX3107_I2C_Write(unsigned int port, unsigned char val)
 {
   byte error;
-  Wire.begin(SDA_PIN,SCL_PIN); // Wire comm. begin
-  Serial.begin(115200); 
-  while(!Serial);
+  Wire.begin(SDA_PIN, SCL_PIN); // Wire comm. begin
+  while (!Serial);
   Serial.println("\nI2C_Write Running");
 
   Wire.beginTransmission(byte(0x2C)); // Datasheet + I2C scan
   Wire.write(port);
   Wire.write(val);
-  error=Wire.endTransmission();
+  error = Wire.endTransmission();
 
-  if(error != 0)
+  if (error != 0)
   {
-      Serial.println("I2C communication failed");
-      return false;
+    Serial.println("I2C communication failed");
+    return false;
   }
   return true;
 }
 
+// órajel és környéke
 
 void setup() {
   /*
-   * PIN Definitions
-   */
-  pinMode(I2C,OUTPUT);
-  pinMode(A0,OUTPUT);
-  pinMode(A1,OUTPUT);
+     PIN Definitions
+  */
+  Serial.begin(115200);
+  Serial.println("I2C communication: Start");
+
+  pinMode(I2C, OUTPUT);
+  pinMode(A0, OUTPUT);
+  pinMode(A1, OUTPUT);
   pinMode(RST, OUTPUT);
-  digitalWrite(I2C,LOW);
-  digitalWrite(A0,LOW);
-  digitalWrite(A1,LOW);
+  digitalWrite(I2C, LOW);
+  digitalWrite(A0, LOW);
+  digitalWrite(A1, LOW);
 
-  /*
-   * Wait for the MAX 3107 to come out of reset
-   * Wait for IRQ PIN to come up, as this
-   * indicates that the MAX3107 reset is complete
-   */
-  //while(IRQ_PIN == 0);
+  MAX3107_RST_Process();
+  MAX3107_I2C_Init(true);
 
-  /*
-   * Perform a hardware reset
-   */
-  digitalWrite(RST, LOW);
-  delay(1);
-  digitalWrite(RST, HIGH);
-  //while(IRQ_PIN == 0);
-
- /*
- * Software reset of the MAX3107
- */
-  MAX3107_I2C_Write(MAX3107_MODE2, 0x01);
-  MAX3107_I2C_Write(MAX3107_MODE2, 0x00);
-  MAX3107_I2C_Write(MAX3107_MODE2, 10); // Loop back
 }
 
-byte reading = 0;
-
+byte reading;
+uint8_t req;
 void loop() {
 
-  MAX3107_I2C_Write(MAX3107_THR,2);
+  MAX3107_I2C_Write(MAX3107_THR, 0b00000000);
   delay(500);
-  Wire.requestFrom(byte(0x2C),1); // Request 2 bytes from the slave device
-  if(1 <= Wire.available())
+
+  req = Wire.requestFrom(44, 1); // Request 1 byte from the slave device
+  if (1 <= Wire.available())
   {
     reading = Wire.read();
-    Serial.println(reading); 
+    Serial.println(reading);
   }
-  delay(2500);
+  delay(500);
 }
