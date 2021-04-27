@@ -92,9 +92,25 @@ void MAX3107_I2C_Init(bool loopback)
   /* Configure clocking */
 
   MAX3107_I2C_Write(MAX3107_CLKSOURCE, 0b00011000);
+  MAX3107_I2C_Write(MAX3107_DIVLSB, 0x02);
 
-  MAX3107_I2C_Write(MAX3107_MODE2, 0b10000000); // Loop back
+  /*Configure modes*/
+  
+  if(loopback)
+    {
+      MAX3107_I2C_Write(MAX3107_MODE2, 0b10000000); // Loop back
+    }  
+  else
+    {
+      MAX3107_I2C_Write(MAX3107_IRQEN, 0b00000000);
+    }
 
+  /*Enable Interrupts*/
+
+  MAX3107_I2C_Write(MAX3107_IRQEN, 0b11111111);
+
+  // Flow control - not needed
+  // GPIOs - not needed  
 }
 
 /***********************************************************
@@ -109,7 +125,7 @@ void MAX3107_I2C_Init(bool loopback)
 **
 **********************************************************/
 
-bool MAX3107_I2C_Write(unsigned int port, unsigned char val)
+bool MAX3107_I2C_Write(unsigned int port, byte val)
 {
   byte error;
   Wire.begin(SDA_PIN, SCL_PIN); // Wire comm. begin
@@ -129,8 +145,52 @@ bool MAX3107_I2C_Write(unsigned int port, unsigned char val)
   return true;
 }
 
-// órajel és környéke
+/***********************************************************
+** Read one byte from the specified register in the MAX3107
+**
+** Arguments:
+** port: MAX3107 register address
+**
+** return value:  Register containments
+**
+**********************************************************/
 
+byte MAX3107_I2C_Read(unsigned int port)
+{
+  uint8_t req;
+  byte reading;
+  byte error;
+  Wire.begin(SDA_PIN, SCL_PIN); // Wire comm. begin
+  while (!Serial);
+  Serial.println("\nI2C_Read Running");
+
+  Wire.beginTransmission(byte(0x2C)); // Datasheet + I2C scan
+  Wire.write(port);
+  error = Wire.endTransmission();
+
+  if (error != 0)
+  {
+    Serial.println("I2C communication failed at #1");
+    return 0b01010101;
+  }
+
+  Wire.requestFrom(44,1);
+  if (1 <= Wire.available())
+  {
+    reading = Wire.read();
+  }
+
+  error = Wire.endTransmission();
+
+  if (error != 0)
+  {
+    Serial.println("I2C communication failed at #2");
+    return 0b01010101;
+  }
+
+  return reading;
+}
+/*************************************************************************************************************************************/
 void setup() {
   /*
      PIN Definitions
@@ -151,18 +211,19 @@ void setup() {
 
 }
 
-byte reading;
-uint8_t req;
+byte f;
 void loop() {
-
-  MAX3107_I2C_Write(MAX3107_THR, 0b00000000);
+  byte content;
+  //content = MAX3107_I2C_Read(MAX3107_PLLCONFIG);
+  //Serial.println(content);
+  MAX3107_I2C_Write(MAX3107_THR, 0);
   delay(500);
 
-  req = Wire.requestFrom(44, 1); // Request 1 byte from the slave device
+  Wire.requestFrom(44, 1); // Request 1 byte from the slave device
   if (1 <= Wire.available())
   {
-    reading = Wire.read();
-    Serial.println(reading);
+    f = Wire.read();
+    Serial.println(f);
   }
   delay(500);
 }
