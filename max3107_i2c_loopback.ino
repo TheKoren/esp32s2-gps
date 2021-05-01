@@ -98,11 +98,11 @@ void MAX3107_I2C_Init(bool loopback)
   
   if(loopback)
     {
-      MAX3107_I2C_Write(MAX3107_MODE2, 0b10000000); // Loop back
+      MAX3107_I2C_Write(MAX3107_MODE2, 0b10100000); // Loop back
     }  
   else
     {
-      MAX3107_I2C_Write(MAX3107_IRQEN, 0b00000000);
+      MAX3107_I2C_Write(MAX3107_MODE2, 0b10000000);
     }
 
   /*Enable Interrupts*/
@@ -125,10 +125,9 @@ void MAX3107_I2C_Init(bool loopback)
 **
 **********************************************************/
 
-bool MAX3107_I2C_Write(unsigned int port, byte val)
+bool MAX3107_I2C_Write(byte port, byte val)
 {
   byte error;
-  Wire.begin(SDA_PIN, SCL_PIN); // Wire comm. begin
   while (!Serial);
   Serial.println("\nI2C_Write Running");
 
@@ -155,7 +154,7 @@ bool MAX3107_I2C_Write(unsigned int port, byte val)
 **
 **********************************************************/
 
-byte MAX3107_I2C_Read(unsigned int port)
+byte MAX3107_I2C_Read(byte port)
 {
   uint8_t req;
   byte reading;
@@ -197,6 +196,7 @@ void setup() {
   */
   Serial.begin(115200);
   Serial.println("I2C communication: Start");
+  Wire.begin(SDA_PIN, SCL_PIN); // Wire comm. begin
 
   pinMode(I2C, OUTPUT);
   pinMode(A0, OUTPUT);
@@ -216,14 +216,16 @@ void loop() {
   byte content;
   //content = MAX3107_I2C_Read(MAX3107_PLLCONFIG);
   //Serial.println(content);
-  MAX3107_I2C_Write(MAX3107_THR, 0);
-  delay(500);
+  MAX3107_I2C_Write(MAX3107_THR, byte(0x04));
+  MAX3107_I2C_Write(MAX3107_THR, byte(0x08));
 
-  Wire.requestFrom(44, 1); // Request 1 byte from the slave device
-  if (1 <= Wire.available())
+  delay(50);
+
+  Wire.requestFrom(44, 2); // Request 1 byte from the slave device
+  while(Wire.available())
   {
     f = Wire.read();
     Serial.println(f);
   }
-  delay(500);
+  delay(50);
 }
