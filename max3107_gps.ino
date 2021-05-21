@@ -1,6 +1,7 @@
 #include <Wire.h>
 #include <inttypes.h>
 
+
 #define SDA_PIN 33
 #define SCL_PIN 26
 #define I2C 35
@@ -43,6 +44,7 @@
 #define MAX3107_DIVMSB       (0x1d)
 #define MAX3107_CLKSOURCE    (0x1e)
 #define MAX3107_REVID        (0x1f)
+
 
 /***********************************************************
 ** Startup with SW and HW reset
@@ -95,24 +97,25 @@ void MAX3107_I2C_Init(bool loopback)
 
   MAX3107_I2C_Write(MAX3107_CLKSOURCE, 0b00011000);
   MAX3107_I2C_Write(MAX3107_DIVLSB, 24);
+  MAX3107_I2C_Write(0x0B, 3);
 
   /*Configure modes*/
-  
-  if(loopback)
-    {
-      MAX3107_I2C_Write(MAX3107_MODE2, 0b10100000); // Loop back
-    }  
+
+  if (loopback)
+  {
+    MAX3107_I2C_Write(MAX3107_MODE2, 0b10101000); // Loop back
+  }
   else
-    {
-      MAX3107_I2C_Write(MAX3107_MODE2, 0b10000000);
-    }
+  {
+    MAX3107_I2C_Write(MAX3107_MODE2, 0b10001000);
+  }
 
   /*Enable Interrupts*/
 
   MAX3107_I2C_Write(MAX3107_IRQEN, 0b11111111);
 
   // Flow control - not needed
-  // GPIOs - not needed  
+  // GPIOs - not needed
 }
 
 /***********************************************************
@@ -132,9 +135,7 @@ bool MAX3107_I2C_Write(byte port, byte val)
   byte error;
 
   while (!Serial);
-
-  //Serial.println("\nI2C_Write Running");
-
+  
   Wire.beginTransmission(byte(0x2C)); // Datasheet + I2C scan
   Wire.write(port);
   Wire.write(val);
@@ -142,9 +143,6 @@ bool MAX3107_I2C_Write(byte port, byte val)
 
   if (error != 0)
   {
-    Serial.println("I2C communication failed");
-    Serial.println(port, HEX);
-    Serial.println(val, BIN);
     return false;
   }
   return true;
@@ -163,11 +161,10 @@ bool MAX3107_I2C_Write(byte port, byte val)
 void MAX3107_I2C_Read(byte port)
 {
   uint8_t req;
-  char reading = 0;
+  char reading;
   byte i2c_error;
   Wire.begin(SDA_PIN, SCL_PIN); // Wire comm. begin
   while (!Serial);
-  //Serial.println("\nI2C_Read Running");
 
   Wire.beginTransmission(byte(0x2C)); // Datasheet + I2C scan
   Wire.write(port);
@@ -177,61 +174,37 @@ void MAX3107_I2C_Read(byte port)
   {
     Serial.println("I2C communication failed at #1");
   }
+
+  static bool checksum = false;
+  static uint8_t checksumcnt = 0;
   Wire.begin(SDA_PIN, SCL_PIN);
-  Wire.requestFrom(44,1);
-  if (1 <= Wire.available())
+  Wire.requestFrom(44, 8);
+  while (1 <= Wire.available())
   {
     reading = Wire.read();
+    if (reading == '$')
+    {
+      Serial.println();
+      checksum = false;
+      checksumcnt = 0;
+    }
+    if(reading == '*')
+    {
+      checksum = true;
+    }
+    if(checksum)
+    {
+      checksumcnt = checksumcnt + 1;
+    }
+    if(!((reading == 10 | reading == 13) | (checksum == 3)))
+    {
+      Serial.print(reading);
+    }
   }
-
   i2c_error = Wire.endTransmission();
-
-  if (i2c_error != 0)
-  {
-    Serial.println("I2C communication failed at #2");
-    Serial.print("Error source: ");
-    Serial.println(i2c_error, DEC);
-  }
-
-  Serial.print("Got something: ");
-  Serial.println(reading, HEX);
 }
 
-char MAX3107_I2C_BurstRead(byte port)
-{
-  uint8_t req;
-  char reading = 0;
-  byte error;
-  Wire.begin(SDA_PIN, SCL_PIN); // Wire comm. begin
-  while (!Serial);
-  //Serial.println("\nI2C_Read Running");
 
-  Wire.beginTransmission(byte(0x2C)); // Datasheet + I2C scan
-  Wire.write(port);
-  error = Wire.endTransmission();
-
-  if (error != 0)
-  {
-    Serial.println("I2C communication failed at #1");
-    return 0b01010101;
-  }
-
-  Wire.requestFrom(44,1);
-  if (1 <= Wire.available())
-  {
-    reading = Wire.read();
-  }
-
-  error = Wire.endTransmission();
-
-  if (error != 0)
-  {
-    Serial.println("I2C communication failed at #2");
-    
-  }
-
-  return reading;
-}
 /*************************************************************************************************************************************/
 void setup() {
   /*
@@ -251,39 +224,22 @@ void setup() {
 
   MAX3107_RST_Process();
   MAX3107_I2C_Init(false);
-  
-  /*Wire.begin(SDA_PIN, SCL_PIN); // Wire comm. begin
-  while (!Serial);
 
+  Wire.begin(SDA_PIN, SCL_PIN); // Wire comm. begin
+  while (!Serial);
   Wire.beginTransmission(byte(0x2C)); // Datasheet + I2C scan
   Wire.write(0x00);
   byte error;
   error = Wire.endTransmission();
-
   if (error != 0)
   {
     Serial.println("I2C communication failed at #1");
-  }*/
+  }
 }
 
-  char reading = 0;
-  
 void loop() {
-  byte sending = 0x01;
-  Serial.print("Sending: ");
-  Serial.println(sending, HEX);
-  MAX3107_I2C_Write(MAX3107_THR,sending);
+  //MAX3107_I2C_Write(0x09,2);   // RX tiltása
+  MAX3107_I2C_Read(0x00); // Ezt úgy kéne, hogy csak akkor, ha van FIFO-ban adat
+  //MAX3107_I2C_Write(0x09,0);    // RX engedélyezése
   delay(10);
-  MAX3107_I2C_Read(MAX3107_THR);
-  delay(10);
-  
-  /*Wire.requestFrom(44,1);
-  if (1 <= Wire.available())
-  {
-    reading = Wire.read();
-    Serial.print(reading);
-    Serial.print(" ");
-    Serial.println(reading, HEX);
-  }
-  delay(10);*/
 }
