@@ -1,4 +1,11 @@
+/*
+* Name: max3107_gps_loopback
+* Function: Get loopback data using MAX3107 loopback functionalities
+* Using Arduino built-in libraries
+*/
+
 #include <Wire.h>
+
 #define SDA_PIN 33
 #define SCL_PIN 26
 #define I2C 35
@@ -163,7 +170,7 @@ byte MAX3107_I2C_Read(byte port)
   byte error;
   Wire.begin(SDA_PIN, SCL_PIN); // Wire comm. begin
   while (!Serial);
-  //Serial.println("\nI2C_Read Running");
+  Serial.println("\nI2C_Read Running");
 
   Wire.beginTransmission(byte(0x2C)); // Datasheet + I2C scan
   Wire.write(port);
@@ -186,12 +193,12 @@ byte MAX3107_I2C_Read(byte port)
 
   if (error != 0)
   {
-    //Serial.println("I2C communication failed at #2");
+    Serial.println("I2C communication failed at #2");
   }
 
   return reading;
 }
-/*************************************************************************************************************************************/
+
 void setup() {
   /*
      PIN Definitions
@@ -213,25 +220,9 @@ void setup() {
 
 }
 
-byte f;
 
 void loop() {
-  /*byte content;
-  content = MAX3107_I2C_Read(MAX3107_PLLCONFIG);
-  Serial.println(content);
-  /*MAX3107_I2C_Write(MAX3107_THR, byte(0x04));
-  MAX3107_I2C_Write(MAX3107_THR, byte(0x08));*/
-  
   MAX3107_I2C_Write(MAX3107_THR, 0xAA);
   MAX3107_I2C_Write(MAX3107_THR, 0x55);
-  //delay(10);
   MAX3107_I2C_Read(0x00);
-  //delay(50);
-
-  /*Wire.requestFrom(44, 2); // Request from the slave device
-  while(Wire.available())
-  {
-    f = Wire.read();
-    Serial.println(f);
-  }*/
 }

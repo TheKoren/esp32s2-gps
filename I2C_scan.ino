@@ -1,3 +1,9 @@
+/*
+* Name: I2C_scan
+* Function: Get the our device addres from the I2C bus.
+* Using Arduino built-in libraries
+*/
+
 #include <Wire.h>
 #define SDA_PIN 33
 #define SCL_PIN 26
@@ -7,7 +13,6 @@
 
 
 void setup() {
-  // put your setup code here, to run once:
   pinMode(I2C,OUTPUT);
   pinMode(A0,OUTPUT);
   pinMode(A1,OUTPUT);
@@ -21,7 +26,6 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
   byte error, address;
   bool device = false;
   Serial.println("Scanning...");

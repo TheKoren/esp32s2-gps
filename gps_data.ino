@@ -1,3 +1,9 @@
+/*
+* Name: gps_data
+* Function: Get real GPS data
+* Using Arduino built-in libraries
+*/
+
 #include <Wire.h>
 #include <inttypes.h>
 
@@ -144,9 +150,9 @@ bool MAX3107_I2C_Write(byte port, byte val)
 
   if (error != 0)
   {
-   //Serial.println("I2C communication failed");
-   // Serial.println(port, HEX);
-   // Serial.println(val, BIN);
+   Serial.println("I2C communication failed");
+   Serial.println(port, HEX);
+   Serial.println(val, BIN);
     return false;
   }
   return true;
@@ -169,7 +175,7 @@ void MAX3107_I2C_Read(byte port)
   byte i2c_error;
   Wire.begin(SDA_PIN, SCL_PIN); // Wire comm. begin
   while (!Serial);
-  //Serial.println("\nI2C_Read Running");
+  Serial.println("\nI2C_Read Running");
 
   Wire.beginTransmission(byte(0x2C)); // Datasheet + I2C scan
   Wire.write(port);
@@ -190,21 +196,16 @@ void MAX3107_I2C_Read(byte port)
 
   if (i2c_error != 0)
   {
-    //Serial.println("I2C communication failed at #2");
-    //Serial.print("Error source: ");
-    //Serial.println(i2c_error, DEC);
+    Serial.println("I2C communication failed at #2");
+    Serial.print("Error source: ");
+    Serial.println(i2c_error, DEC);
   }
   if(reading == '$')
   {
     Serial.println();
-    //Serial.print(reading);
   }
     Serial.print(reading);
-    //reading = 'G';
-   // Serial.print(reading);
-    //Serial.print(" ");
- // Serial.print(" ");
- // Serial.println(reading, HEX);
+
 }
 
 char MAX3107_I2C_BurstRead(byte port)
@@ -214,7 +215,6 @@ char MAX3107_I2C_BurstRead(byte port)
   byte error;
   Wire.begin(SDA_PIN, SCL_PIN); // Wire comm. begin
   while (!Serial);
-  //Serial.println("\nI2C_Read Running");
 
   Wire.beginTransmission(byte(0x2C)); // Datasheet + I2C scan
   Wire.write(port);
@@ -281,13 +281,13 @@ void loop() {
   MAX3107_I2C_Read(0x00); // Ezt úgy kéne, hogy csak akkor, ha van FIFO-ban adat
   MAX3107_I2C_Write(0x09,0);    // RX engedélyezése
   delay(10);
-  /*Wire.requestFrom(44,1);
+  Wire.requestFrom(44,1);
   if (1 <= Wire.available())
   {
     reading = Wire.read();
     Serial.print(reading);
     Serial.print(" ");
     Serial.println(reading, HEX);
-  }*/
+  }
   delay(10);
 }

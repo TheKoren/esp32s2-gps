@@ -1,3 +1,9 @@
+/*
+* Name: max3107_gps
+* Function: Get GPS data using MAX3107 UART
+* Using Arduino built-in libraries
+*/
+
 #include <Wire.h>
 #include <inttypes.h>
 
@@ -103,7 +109,7 @@ void MAX3107_I2C_Init(bool loopback)
 
   if (loopback)
   {
-    MAX3107_I2C_Write(MAX3107_MODE2, 0b10101000); // Loop back
+      MAX3107_I2C_Write(MAX3107_MODE2, 0b10101000); // Loop back
   }
   else
   {
@@ -238,8 +244,8 @@ void setup() {
 }
 
 void loop() {
-  //MAX3107_I2C_Write(0x09,2);   // RX tiltása
-  MAX3107_I2C_Read(0x00); // Ezt úgy kéne, hogy csak akkor, ha van FIFO-ban adat
-  //MAX3107_I2C_Write(0x09,0);    // RX engedélyezése
+  MAX3107_I2C_Write(0x09,2);   // RX disable
+  MAX3107_I2C_Read(0x00); // If theres data in FIFO
+  MAX3107_I2C_Write(0x09,0);    // RX enable
   delay(10);
 }
